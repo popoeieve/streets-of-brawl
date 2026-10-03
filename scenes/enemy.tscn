@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy.gd" id="1"]
+
+[node name="Enemy" type="Node2D"]
+script = ExtResource("1")
+max_health = 40
+move_speed = 40.0
+attack_damage = 8
+hit_time = 0.35
+free_on_death = true
+show_health_bar = true
+shirt_color = Color(0.75, 0.15, 0.15, 1)
+pants_color = Color(0.25, 0.1, 0.1, 1)
+hair_color = Color(0.9, 0.8, 0.2, 1)

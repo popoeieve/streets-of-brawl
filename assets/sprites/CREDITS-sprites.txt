@@ -1,0 +1,5 @@
+Sprites de personajes (assets/sprites/player.png y enemy.png)
+Pack: "Streets of Fight" por Luis Zuno (ansimuz) - https://ansimuz.itch.io/streets-of-fight
+Licencia: CC0 (dominio público): uso libre, personal o comercial, sin necesidad de atribución.
+Modificaciones: frames reempaquetados en hojas de sprites con tools/build_atlas.py; la animación
+"dead" de la protagonista se genera girando su último frame "hurt".

@@ -1,31 +1,29 @@
 class_name Background
 extends Node2D
-## Fondo de ciudad nocturna dibujado por código (placeholder).
+## Fondo del nivel: calle andaluza de noche, estilo ochentero (assets/backgrounds/calle_tajo.png, 1280x224).
+## Se regenera con tools/make_background.py. 1 píxel del fondo = 1 píxel del juego, igual que los personajes.
 
-const LEVEL_W := 1280
+const TEXTURE := preload("res://assets/backgrounds/calle_tajo.png")
+
+## x de las farolas encendidas (misma lista que LAMPS en tools/night_pass.py).
+const LAMPS := [90, 330, 580, 820, 1020, 1240]
+const NIGHT := Color(0.52, 0.56, 0.82) ## Tinte de los luchadores lejos de las farolas.
+const LAMP_LIGHT := Color(1.0, 0.92, 0.75) ## Tinte bajo la luz de una farola.
+const LAMP_RADIUS := 130.0
 
 
 func _ready() -> void:
 	z_index = -10
+	var s := Sprite2D.new()
+	s.texture = TEXTURE
+	s.centered = false
+	add_child(s)
 
 
-func _draw() -> void:
-	for i in 9:
-		draw_rect(Rect2(0, i * 14, LEVEL_W, 14), Color.from_hsv(0.75, 0.6, 0.22 + i * 0.03))
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1991
-	var x := 0
-	while x < LEVEL_W:
-		var bw := rng.randi_range(30, 60)
-		var bh := rng.randi_range(40, 90)
-		draw_rect(Rect2(x, 120 - bh, bw, bh), Color(0.1, 0.08, 0.2))
-		for wy in range(120 - bh + 6, 110, 10):
-			for wx in range(x + 5, x + bw - 6, 9):
-				if rng.randf() > 0.5:
-					draw_rect(Rect2(wx, wy, 4, 5), Color("f5c542"))
-		x += bw + rng.randi_range(0, 6)
-	draw_rect(Rect2(0, 120, LEVEL_W, 14), Color("5a5a6a")) # acera
-	draw_rect(Rect2(0, 132, LEVEL_W, 2), Color("3a3a48")) # bordillo
-	draw_rect(Rect2(0, 134, LEVEL_W, 90), Color("2e2e3a")) # calle
-	for lx in range(0, LEVEL_W, 40):
-		draw_rect(Rect2(lx, 176, 20, 2), Color("6e6e7e"))
+## Color con el que se dibuja un luchador situado en x: oscuro de noche, más claro cerca de una farola.
+static func night_tint(x: float) -> Color:
+	var nearest := LAMP_RADIUS
+	for lamp in LAMPS:
+		nearest = minf(nearest, absf(x - float(lamp)))
+	var k := 1.0 - nearest / LAMP_RADIUS
+	return NIGHT.lerp(LAMP_LIGHT, k * k)

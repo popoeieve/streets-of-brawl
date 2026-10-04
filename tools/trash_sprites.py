@@ -1,0 +1,57 @@
+"""Basura pequeña en pixel-art, tirada en el suelo y en perspectiva a 45 grados (como las baldosas de la acera):
+los objetos planos se dibujan achatados y "inclinados" (cada fila desplazada 1 px), con colores apagados.
+Cada sprite: (filas, paleta); '.' = transparente."""
+
+OUT = (0x2a, 0x26, 0x2e)
+SPR = {}
+
+
+def add(name, rows, pal):
+    w = len(rows[0])
+    assert all(len(r) == w for r in rows), name
+    SPR[name] = (rows, pal)
+
+
+PAPER = {'w': (0xb8, 0xb4, 0xa4), 'W': (0x9a, 0x96, 0x88), 'l': (0x6c, 0x68, 0x64)}
+add('paper_a', ["..wwww", ".wwwww", "wwwww."], PAPER)
+add('paper_b', ["..wlww", ".wwwlw", "wlwww."], PAPER)
+add('paper_c', ["..wwW", ".wwww", "wwWw."], PAPER)
+add('crumple', [".w.", "wWw"], PAPER)
+add('newspaper', ["...nnnnnn", "..nhhhhnn", ".nnllnnn.", "nnnnnnn.."],
+    {'n': (0xae, 0xa8, 0x98), 'h': (0x58, 0x54, 0x58), 'l': (0x80, 0x7c, 0x76)})
+add('card', ["..ccccc", ".cccbcc", "ccccc.."], {'c': (0x84, 0x68, 0x44), 'b': (0xa2, 0x84, 0x5c)})
+add('card_small', ["..cc", ".ccc", "ccc."], {'c': (0x84, 0x68, 0x44)})
+add('bag', [".wwww.", "wWwwbw", ".wwww."], {'w': (0xa8, 0xac, 0xb0), 'W': (0x88, 0x90, 0x9c), 'b': (0x78, 0x86, 0x9c)})
+add('chips', ["yYyry", "yrryy"], {'y': (0xa8, 0x8c, 0x38), 'Y': (0xc0, 0xa8, 0x58), 'r': (0x90, 0x40, 0x3c)})
+add('peel', ["yyoyy", ".y.y."], {'y': (0xa8, 0x94, 0x38), 'o': (0x5a, 0x40, 0x20)})
+add('leaf', ["bd", "db"], {'b': (0x5a, 0x42, 0x28), 'd': (0x42, 0x30, 0x1e)})
+add('leaf2', [".b", "bd"], {'b': (0x6a, 0x4c, 0x2a), 'd': (0x4a, 0x34, 0x20)})
+add('butt', ["wb"], {'w': (0xb0, 0xac, 0x9c), 'b': (0x70, 0x50, 0x30)})
+add('cap', ["s"], {'s': (0x9c, 0x9c, 0xa4)})
+add('shard', ["g.g", ".gg"], {'g': (0x5c, 0x84, 0x70)})
+
+# lata y botella tumbadas (planas, achatadas)
+for key, (r, R) in {
+    'red': ((0x90, 0x3c, 0x3c), (0xb0, 0x60, 0x58)),
+    'blue': ((0x3c, 0x58, 0x90), (0x60, 0x80, 0xb0)),
+    'gold': ((0x98, 0x7c, 0x30), (0xb8, 0xa0, 0x58)),
+    'green': ((0x3c, 0x78, 0x4c), (0x60, 0x98, 0x70)),
+}.items():
+    add('can_' + key, [".ooo.", "oSrRo"], {'o': OUT, 'S': (0xa4, 0xa8, 0xb0), 'r': r, 'R': R})
+add('can_crushed', ["oSso", ".oro"], {'o': OUT, 'S': (0xa4, 0xa8, 0xb0), 's': (0x84, 0x88, 0x94), 'r': (0x88, 0x3c, 0x3c)})
+add('bottle_green', ["ogGgwc", ".oooo."], {'o': (0x1c, 0x30, 0x24), 'g': (0x2c, 0x5c, 0x3c), 'G': (0x58, 0x88, 0x68), 'w': (0xb0, 0xa8, 0x90), 'c': (0x98, 0x80, 0x38)})
+add('bottle_brown', ["obbBwc", ".oooo."], {'o': (0x30, 0x1c, 0x10), 'b': (0x60, 0x38, 0x1c), 'B': (0x88, 0x5c, 0x38), 'w': (0xb0, 0xa8, 0x90), 'c': (0x98, 0x80, 0x38)})
+add('bottle_pet', ["pcccw", ".ooo."], {'o': (0x58, 0x6c, 0x7c), 'p': (0x34, 0x54, 0x90), 'c': (0x88, 0xa0, 0xb4), 'w': (0xb4, 0xc4, 0xd0)})
+
+# bolsas de basura pequeñas (junto a los contenedores y al bordillo; objetos con volumen, tamaño reducido)
+add('bag_black', [
+    "..oo..",
+    ".okko.",
+    "okKkko",
+    "okkkKo",
+    ".okko.",
+], {'o': (0x14, 0x12, 0x1a), 'k': (0x28, 0x28, 0x34), 'K': (0x58, 0x58, 0x6c)})
+
+FLAT = ['paper_a', 'paper_b', 'paper_c', 'paper_a', 'paper_b', 'crumple', 'crumple', 'newspaper', 'card', 'card_small', 'bag',
+        'chips', 'peel', 'leaf', 'leaf', 'leaf2', 'leaf2', 'butt', 'butt', 'butt', 'cap', 'shard',
+        'can_red', 'can_blue', 'can_gold', 'can_green', 'can_crushed', 'bottle_green', 'bottle_brown', 'bottle_pet']

@@ -1,7 +1,7 @@
 class_name Results
 extends CanvasLayer
 ## Pantalla de resultados al acabar la misión: la pantalla se oscurece un poco, la puntuación sube desde 0
-## de uno en uno con ruido de tragaperras (máx. ~6 s), parpadea al llegar al total y, 5 s después,
+## de uno en uno con ruido de tragaperras (1 s exacto), parpadea al llegar al total y, 5 s después,
 ## fundido a negro. Emite `fade_started` (para parar la música) y `done` (cuando ya es negro).
 
 signal fade_started(duration: float)
@@ -9,9 +9,8 @@ signal done
 
 const DARK_ALPHA := 0.5 ## Cuánto se oscurece la pantalla (sin pasarse).
 const DARKEN_TIME := 1.5
-const COUNT_DELAY := 1.0 ## Espera antes de empezar a contar.
-const COUNT_MAX := 6.0 ## Segundos máximos de la cuenta.
-const COUNT_RATE := 240.0 ## Puntos por segundo (sube más rápido si la puntuación es enorme, para no pasar de COUNT_MAX).
+const COUNT_DELAY := 0.0 ## Espera antes de empezar a contar (0 = empieza en cuanto aparece la pantalla).
+const COUNT_TIME := 1.0 ## La cuenta dura SIEMPRE exactamente 1 s, sea cual sea la puntuación.
 const TICK_EVERY := 0.035 ## Cada cuánto suena el clic de tragaperras.
 const BLINK_HOLD := 5.0 ## Segundos de parpadeo con la puntuación final antes del fundido.
 const FADE_TIME := 1.5
@@ -20,6 +19,7 @@ const BLACK_HOLD := 1.0
 var score := 0
 var kills := 0
 var _t := 0.0
+var _t0_ms := -1 ## Instante (reloj real) en que empieza la cuenta.
 var _count := 0.0
 var _tick := 0.0
 var _phase := 0 ## 0 = contando, 1 = parpadeo final, 2 = fundido a negro, 3 = negro (hecho)
@@ -77,14 +77,19 @@ func _process(delta: float) -> void:
 				_title.visible = true
 				_info.visible = true
 				_score.visible = true
-				var rate := maxf(COUNT_RATE, float(score) / COUNT_MAX)
-				_count = minf(_count + rate * delta, float(score))
+				# Cuenta con el reloj real (no con la suma de deltas): dura COUNT_TIME segundos exactos.
+				if _t0_ms < 0:
+					_t0_ms = Time.get_ticks_msec()
+				var elapsed := float(Time.get_ticks_msec() - _t0_ms) / 1000.0
+				_count = float(score) * clampf(elapsed / COUNT_TIME, 0.0, 1.0)
 				_score.text = "%06d" % int(_count)
 				_tick -= delta
 				if _tick <= 0.0 and int(_count) < score:
 					_tick = TICK_EVERY
 					Sfx.play("slot_tick", -4.0, 1.0 + 0.5 * (_count / maxf(float(score), 1.0)), 0.04)
-				if int(_count) >= score:
+				if elapsed >= COUNT_TIME:
+					print("Cuenta de puntos terminada en %.2f s" % elapsed)
+					_score.text = "%06d" % score
 					_phase = 1
 					_phase_t = 0.0
 					Sfx.play("slot_win", -2.0, 1.0, 0.0)

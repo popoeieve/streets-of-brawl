@@ -467,6 +467,133 @@ def clear_zone(xa, xb):
     paint_sidewalk(xa, xb)
 
 
+# ---------- enclaves de la mitad: Casa El Cateto y tienda APP ----------
+def casa_el_cateto(x0, w=150):
+    xb = x0 + w
+    top = SIDEWALK_Y - 92
+    gy = SIDEWALK_Y
+    BR = (0xb0, 0x8e, 0x62)
+    BRJ = (0x98, 0x76, 0x50)
+    MAR = (0x7c, 0x1c, 0x2a)
+    PLAS = (0xe8, 0xe2, 0xd2)
+    clear_zone(x0 - 4, xb + 4)
+    rect(x0, top, xb, gy, BR)
+    for yy in range(top, gy, 3):                             # ladrillo cara vista
+        rect(x0, yy, xb, yy + 1, BRJ)
+        off = 0 if ((yy - top) // 3) % 2 == 0 else 4
+        for xx in range(x0 + off, xb, 8):
+            rect(xx, yy, xx + 1, yy + 3, BRJ)
+    for _ in range(w * 92 // 40):
+        px(rnd.randint(x0, xb - 1), rnd.randint(top, gy - 10), shade(BR, rnd.choice((0.9, 1.08, 1.12))))
+    rect(xb - 4, top, xb, gy, shade(BR, 0.8))
+    rect(x0, top, x0 + 1, gy, (0x20, 0x1c, 0x18))
+    # cornisa granate superior
+    rect(x0 - 1, top + 6, xb + 1, top + 12, MAR)
+    rect(x0 - 1, top + 6, xb + 1, top + 7, shade(MAR, 1.4))
+    rect(x0 - 1, top + 11, xb + 1, top + 12, shade(MAR, 0.7))
+    rect(x0 - 1, top, xb + 1, top + 1, shade(BR, 1.15))
+    # planta alta: paños blancos con ventanas enrejadas
+    for px0 in range(x0 + 6, xb - 24, 36):
+        rect(px0, top + 14, px0 + 24, top + 37, PLAS)
+        rect(px0 + 22, top + 14, px0 + 24, top + 37, shade(PLAS, 0.82))
+        rect(px0 + 7, top + 16, px0 + 17, top + 34, (0xf2, 0xf0, 0xe8))
+        rect(px0 + 8, top + 17, px0 + 16, top + 33, GLASS)
+        for xx in range(px0 + 9, px0 + 16, 2):
+            rect(xx, top + 17, xx + 1, top + 33, IRON)
+        rect(px0 + 8, top + 25, px0 + 16, top + 26, IRON)
+    # rótulo "CASA EL CATETO" sobre el ladrillo y cornisa granate inferior
+    text_s(x0 + 20, top + 40, "CASA EL CATETO", MAR, 2)
+    rect(x0 - 1, top + 53, xb + 1, top + 58, MAR)
+    rect(x0 - 1, top + 53, xb + 1, top + 54, shade(MAR, 1.4))
+    rect(x0 - 1, top + 57, xb + 1, top + 58, shade(MAR, 0.7))
+    # planta baja: ventanas con reja
+    for wx in (x0 + 12, x0 + 44, xb - 26):
+        window(wx, gy - 32, 14, 20)
+        for xx in range(wx + 1, wx + 14, 3):
+            rect(xx, gy - 32, xx + 1, gy - 12, IRON)
+        rect(wx, gy - 22, wx + 14, gy - 21, IRON)
+    # zócalo de piedra clara
+    rect(x0, gy - 8, xb, gy, (0xc4, 0xb4, 0x94))
+    rect(x0, gy - 9, xb, gy - 8, (0x9a, 0x88, 0x68))
+    # entrada: reja negra con cristal y toldo blanco
+    ex = x0 + 92
+    rect(ex - 1, gy - 29, ex + 27, gy, (0x2a, 0x28, 0x30))
+    rect(ex + 1, gy - 27, ex + 25, gy, (0x4a, 0x56, 0x66))
+    for xx in range(ex + 2, ex + 25, 3):
+        rect(xx, gy - 27, xx + 1, gy, IRON)
+    rect(ex, gy - 16, ex + 26, gy - 15, IRON)
+    rect(ex - 4, gy - 36, ex + 34, gy - 29, (0xf4, 0xf2, 0xee))              # toldo
+    for xx in range(ex - 4, ex + 34, 4):
+        rect(xx, gy - 36, xx + 1, gy - 29, (0xc8, 0xc6, 0xc0))
+    rect(ex - 4, gy - 30, ex + 34, gy - 28, (0xa8, 0xa4, 0x9c))
+    # señal azul de dirección obligatoria con poste
+    rect(x0 + 77, gy - 30, x0 + 79, gy + 10, (0x7a, 0x7a, 0x82))
+    rect(x0 + 70, gy - 43, x0 + 86, gy - 28, (0x2a, 0x68, 0xc0))
+    rect(x0 + 71, gy - 42, x0 + 85, gy - 29, (0x3a, 0x78, 0xd0))
+    rect(x0 + 77, gy - 40, x0 + 79, gy - 31, (0xf8, 0xf8, 0xf8))
+    rect(x0 + 75, gy - 38, x0 + 81, gy - 37, (0xf8, 0xf8, 0xf8))
+    rect(x0 + 76, gy - 39, x0 + 80, gy - 38, (0xf8, 0xf8, 0xf8))
+
+
+def tienda_app(x0, w=100):
+    xb = x0 + w
+    top = SIDEWALK_Y - 100
+    gy = SIDEWALK_Y
+    PINK = (0xd8, 0x96, 0x8c)
+    clear_zone(x0 - 4, xb + 4)
+    rect(x0, top, xb, gy, PINK)
+    for _ in range(w * 100 // 60):
+        px(rnd.randint(x0, xb - 1), rnd.randint(top, gy - 9), shade(PINK, rnd.choice((0.92, 0.95, 1.05))))
+    rect(xb - 3, top, xb, gy, shade(PINK, 0.84))
+    rect(x0, top, x0 + 1, gy, shade(PINK, 0.7))
+    # tejado y cornisa
+    rect(x0 - 2, top - 7, xb + 2, top, TILE)
+    for xx in range(x0 - 2, xb + 2, 3):
+        rect(xx, top - 7, xx + 1, top, TILE_D)
+    rect(x0 - 2, top, xb + 2, top + 3, (0xf2, 0xe2, 0xd8))
+    # balcones de forja en la planta alta
+    for cx in (x0 + 24, x0 + 70):
+        balcony(cx, top + 38, 24, (0x5a, 0x3a, 0x22))
+    # cartel "APP_" con panel azul
+    rect(x0 + 6, top + 46, x0 + 82, top + 62, (0xf4, 0xf6, 0xf6))
+    rect(x0 + 6, top + 46, x0 + 82, top + 47, (0xc8, 0xcc, 0xcc))
+    rect(x0 + 52, top + 46, x0 + 82, top + 62, (0x18, 0x4c, 0xb4))
+    text_s(x0 + 12, top + 50, "APP_", (0x1e, 0x8f, 0x96), 2)
+    rect(x0 + 60, top + 51, x0 + 76, top + 52, (0xd8, 0xe4, 0xf8))
+    rect(x0 + 60, top + 55, x0 + 72, top + 56, (0xd8, 0xe4, 0xf8))
+    cx, cy = x0 + 3, top + 54                                             # círculo azul de la esquina
+    for dy in range(-6, 7):
+        rw = int((36 - dy * dy) ** 0.5)
+        rect(cx - rw, cy + dy, cx + rw + 1, cy + dy + 1, (0x18, 0x4c, 0xb4))
+    # escaparate con toldo turquesa y carteles
+    rect(x0 + 8, top + 62, x0 + 52, top + 66, (0x2a, 0x8f, 0x8a))
+    rect(x0 + 8, top + 66, x0 + 52, gy, (0xf4, 0xf2, 0xee))
+    rect(x0 + 10, top + 66, x0 + 50, gy, (0x20, 0x20, 0x2a))
+    rect(x0 + 12, top + 70, x0 + 22, top + 94, (0x2a, 0x5a, 0xb8))        # póster azul
+    rect(x0 + 14, top + 74, x0 + 20, top + 76, (0xf8, 0xf8, 0xf8))
+    rect(x0 + 14, top + 79, x0 + 20, top + 80, (0xf8, 0xf8, 0xf8))
+    rect(x0 + 24, top + 70, x0 + 32, top + 90, (0xe8, 0x50, 0x30))        # póster naranja
+    rect(x0 + 34, top + 70, x0 + 48, top + 92, (0xe8, 0xe8, 0xf0))        # póster blanco
+    rect(x0 + 36, top + 74, x0 + 46, top + 75, (0x20, 0x4c, 0xb0))
+    # panel informativo blanco
+    rect(x0 + 56, top + 66, x0 + 84, top + 96, (0xf6, 0xf6, 0xf6))
+    rect(x0 + 56, top + 66, x0 + 84, top + 67, (0xc0, 0xc0, 0xc8))
+    text_s(x0 + 60, top + 69, "APP", (0x1e, 0x8f, 0x96), 2)
+    for k, yy in enumerate(range(top + 79, top + 94, 3)):
+        rect(x0 + 59, yy, x0 + 59 + (20 if k % 2 == 0 else 15), yy + 1, (0x7a, 0x7e, 0x88))
+    # puerta marrón a la derecha y caja de la acometida
+    rect(x0 + 88, top + 62, xb, gy, (0xf0, 0xe0, 0xd8))
+    rect(x0 + 90, top + 64, xb - 1, gy, (0x6a, 0x40, 0x2a))
+    rect(x0 + 90, top + 78, x0 + 98, top + 82, shade((0x6a, 0x40, 0x2a), 0.8))
+    rect(x0 + 85, top + 78, x0 + 87, top + 90, (0xe8, 0xe8, 0xe8))
+    rect(x0, gy - 6, x0 + 8, gy, shade(PINK, 0.8))                         # zócalo
+
+
+casa_el_cateto(496)
+tienda_app(650)
+rect(646, 20, 650, SIDEWALK_Y, (0x58, 0x44, 0x40))   # medianera entre ambos edificios
+
+
 # ---------- enclave del principio: plaza de entrada ----------
 def plaza_quiosco(xa, xb):
     gy = SIDEWALK_Y

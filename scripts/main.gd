@@ -77,7 +77,7 @@ func _process(delta: float) -> void:
 	if finished:
 		if clear_active:
 			# La cámara se centra despacio donde estaba el personaje y NO le sigue mientras sale andando.
-			camera.position.x = lerpf(camera.position.x, cam_end_x, 1.0 - exp(-CAM_FOLLOW_RECENTER * delta))
+			camera.position.x = maxf(camera.position.x, lerpf(camera.position.x, cam_end_x, 1.0 - exp(-CAM_FOLLOW_RECENTER * delta)))
 			if player.position.x >= player.exit_x:
 				player.visible = false
 		elif Input.is_action_just_pressed("ui_accept"):
@@ -86,7 +86,8 @@ func _process(delta: float) -> void:
 
 	var cam_target := clampf(player.position.x, VIEW_W / 2.0, cam_max)
 	cam_follow = move_toward(cam_follow, CAM_FOLLOW_NORMAL, CAM_FOLLOW_RAMP * delta)
-	var cam_x := lerpf(camera.position.x, cam_target, 1.0 - exp(-cam_follow * delta))
+	# La cámara solo avanza: nunca vuelve hacia atrás (izquierda).
+	var cam_x := maxf(camera.position.x, lerpf(camera.position.x, cam_target, 1.0 - exp(-cam_follow * delta)))
 	camera.position.x = cam_x
 	_update_can(delta)
 	player.min_x = cam_x - VIEW_W / 2.0 + 10.0
@@ -124,7 +125,7 @@ func _end_wave() -> void:
 		# Fin de misión: el jugador pierde el control, el personaje sale despacio por la derecha sin que la
 		# cámara le siga, la pantalla se oscurece y se cuentan los puntos (scripts/results.gd).
 		clear_active = true
-		cam_end_x = clampf(player.position.x, VIEW_W / 2.0, float(LEVEL_W - VIEW_W / 2))
+		cam_end_x = maxf(camera.position.x, clampf(player.position.x, VIEW_W / 2.0, float(LEVEL_W - VIEW_W / 2)))
 		player.max_x = 100000.0
 		player.exit_x = cam_end_x + VIEW_W / 2.0 + 30.0
 		player.auto_walk = true

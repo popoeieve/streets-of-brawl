@@ -23,6 +23,9 @@ const KICK_WINDUP := 1.8 ## La patada (3er golpe del combo) tarda más en conect
 @export var hit_depth := 26.0 ## Tolerancia en profundidad (eje Y): cuánto puede estar el rival por encima/debajo.
 @export var free_on_death := false
 @export var show_health_bar := false
+@export var hurt_time := 0.4 ## Segundos que dura el tambaleo al recibir un golpe normal.
+@export var body_radius := 0.0 ## Cuerpo extra del luchador: los rivales le alcanzan desde más lejos (el boss es grande).
+@export var shadow_radius := 11.0 ## Tamaño de la sombra en el suelo (el boss la tiene mayor).
 @export_group("Sprites")
 @export var sprite_sheet: Texture2D ## Hoja de sprites (una fila por animación).
 @export var anim_set := "brawler" ## Clave en scripts/anim_sets.gd ("brawler", "punk"...).
@@ -36,6 +39,9 @@ var state := "idle" # idle, walk, jump, attack, hurt, down (derribado), dead
 var state_time := 0.0
 var anim_time := 0.0
 var combo := 0
+var score_value := 100 ## Puntos que da al morir (el boss da más).
+var special_anim := "idle" ## Animación que se reproduce en el estado "special" (ataques especiales de un boss).
+var special_frame := 0 ## Frame de esa animación (lo fija el boss cada fotograma).
 var min_x := -1000.0
 var max_x := 100000.0
 var _last_attack_ms := -10000
@@ -43,6 +49,8 @@ var _hit_done := false
 var _kicked: Array = [] ## Rivales ya derribados por la patada voladora actual.
 var _air_attack := false ## Golpe dado en el aire: patada voladora que conserva el impulso del salto.
 var _sprite: Sprite2D
+var _fw := 1.0 ## Tamaño de un fotograma en la hoja de sprites.
+var _fh := 1.0
 var _cfg: Dictionary
 var _feet := Vector2.ZERO
 var _atk_hit_time := 0.1
@@ -55,8 +63,12 @@ func _ready() -> void:
 	_feet = _cfg["feet"]
 	_sprite = Sprite2D.new()
 	_sprite.texture = sprite_sheet
-	_sprite.hframes = _cfg["cols"]
-	_sprite.vframes = _cfg["rows"]
+	# Se recorta cada fotograma con una región y se activa el recorte del filtro: así, aunque el sprite se
+	# tambalee, gire o quede a medio píxel, no se cuelan líneas del fotograma vecino de la hoja.
+	_fw = float(sprite_sheet.get_width()) / float(_cfg["cols"])
+	_fh = float(sprite_sheet.get_height()) / float(_cfg["rows"])
+	_sprite.region_enabled = true
+	_sprite.region_filter_clip_enabled = true
 	_sprite.centered = false
 	_sprite.offset = -_feet # el origen del nodo = los pies, así las rotaciones giran sobre ellos
 	add_child(_sprite)
@@ -74,6 +86,10 @@ func wants_jump() -> bool:
 
 func get_targets() -> Array:
 	return []
+
+## Estado "special": lo implementa el boss (ataques con animación y movimiento propios).
+func _special_process(_delta: float) -> void:
+	set_state("idle")
 # -------------------------------------------
 
 
@@ -116,7 +132,7 @@ func _process(delta: float) -> void:
 		"hurt":
 			position.x += knock * delta
 			knock = move_toward(knock, 0.0, 400.0 * delta)
-			if state_time >= 0.4:
+			if state_time >= hurt_time:
 				set_state("jump" if z > 0.0 else "idle")
 		"down":
 			# derribado: sale despedido, cae al suelo y se levanta (no muere)
@@ -124,6 +140,8 @@ func _process(delta: float) -> void:
 			knock = move_toward(knock, 0.0, 300.0 * delta)
 			if state_time >= DOWN_TIME and z <= 0.0:
 				set_state("idle")
+		"special":
+			_special_process(delta)
 		"dead":
 			position.x += knock * delta
 			knock = move_toward(knock, 0.0, 400.0 * delta)
@@ -207,13 +225,18 @@ func _update_sprite() -> void:
 		"hurt":
 			a = _anim("hurt")
 			frame = mini(int(state_time / 0.4 * int(a["n"])), int(a["n"]) - 1)
+		"special":
+			a = _anim(special_anim)
+			frame = clampi(special_frame, 0, int(a["n"]) - 1)
 		"dead", "down":
 			a = _anim("dead")
 			frame = mini(int(state_time / 0.15), int(a["n"]) - 1)
 		_:
 			a = _anim("idle")
 			frame = int(anim_time * a["fps"]) % int(a["n"])
-	_sprite.frame = int(a["row"]) * int(_cfg["cols"]) + frame
+	var fi := int(a["row"]) * int(_cfg["cols"]) + int(a.get("start", 0)) + frame
+	var ncols := int(_cfg["cols"])
+	_sprite.region_rect = Rect2(float(fi % ncols) * _fw, float(floori(float(fi) / float(ncols))) * _fh, _fw, _fh)
 	_sprite.flip_h = (facing < 0) == bool(_cfg.get("faces_right", true))
 	_sprite.position = Vector2(0.0, -z)
 	_sprite.rotation = 0.0
@@ -272,7 +295,7 @@ func do_hit() -> void:
 		if target == null or target.state == "dead" or target.state == "down":
 			continue
 		var dx := (target.position.x - position.x) * facing
-		if dx > -6.0 and dx < hit_reach \
+		if dx > -6.0 - target.body_radius and dx < hit_reach + target.body_radius \
 				and absf(target.position.y - position.y) < hit_depth \
 				and absf(target.z - z) < (50.0 if _air_attack else 30.0):
 			target.take_damage(dmg, self, strong)
@@ -281,12 +304,18 @@ func do_hit() -> void:
 ## Patada voladora: mientras la pierna está extendida, cualquier rival que toque al luchador
 ## cae al suelo; si el daño le deja sin vida, muere.
 func _flying_kick_sweep() -> void:
+	# La patada voladora también desvía las dagas del boss (suenan metálicas y caen al suelo).
+	for pr in get_tree().get_nodes_in_group("boss_projectiles"):
+		var d: float = (pr.position.x - position.x) * facing
+		if d > -16.0 and d < hit_reach and absf(pr.position.y - position.y) < hit_depth \
+				and absf(pr.z - (z + 14.0)) < 28.0:
+			pr.deflect(float(facing))
 	for t in get_targets():
 		var target := t as Fighter
 		if target == null or target in _kicked or target.state == "dead" or target.state == "down":
 			continue
 		var dx := (target.position.x - position.x) * facing
-		if dx > -16.0 and dx < hit_reach \
+		if dx > -16.0 - target.body_radius and dx < hit_reach + target.body_radius \
 				and absf(target.position.y - position.y) < hit_depth \
 				and absf(target.z - z) < 50.0:
 			_kicked.append(target)
@@ -351,7 +380,7 @@ func die() -> void:
 func _draw() -> void:
 	# Sombra en el suelo (el sprite se dibuja encima, como nodo hijo)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.35))
-	draw_circle(Vector2.ZERO, 11.0, Color(0, 0, 0, 0.35))
+	draw_circle(Vector2.ZERO, shadow_radius, Color(0, 0, 0, 0.35))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	if show_health_bar and health < max_health and state != "dead":

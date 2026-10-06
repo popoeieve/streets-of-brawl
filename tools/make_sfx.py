@@ -143,6 +143,87 @@ def slot_win():
     return np.tanh(sig * 0.9)
 
 
+def hiss():
+    """Siseo de serpiente (boss): ruido filtrado agudo con un temblor."""
+    n = int(0.7 * SR)
+    t = tt(n)
+    noise = rng.uniform(-1, 1, n)
+    band = noise - lowpass(noise, 0.08)
+    env = np.sin(np.pi * np.clip(t / t[-1], 0, 1)) ** 0.8 * (0.8 + 0.2 * np.sin(2 * np.pi * 28 * t))
+    return lowpass(band, 0.6) * env
+
+
+def spit():
+    """Escupitajo: pop humedo con barrido descendente."""
+    n = int(0.22 * SR)
+    t = tt(n)
+    f = 260 + 900 * np.exp(-t / 0.04)
+    sig = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.07)
+    noise = rng.uniform(-1, 1, n)
+    sig += lowpass(noise, 0.25) * np.exp(-t / 0.05) * 0.6
+    return sig
+
+
+def boss_yell():
+    """Grito corto y seco del boss al atacar (\u00a1HAA!): voz grave aspera con ataque brusco."""
+    n = int(0.3 * SR)
+    t = tt(n)
+    f = 190 - 70 * (t / t[-1]) + 12 * np.sin(2 * np.pi * 40 * t)
+    src = 2 * ((np.cumsum(f) / SR) % 1.0) - 1
+    src += 0.5 * rng.uniform(-1, 1, n)
+    v = lowpass(src, 0.33)
+    v = v - lowpass(v, 0.03)
+    v = np.tanh(v * 3.0)
+    return v * np.minimum(1, t / 0.008) * np.exp(-t / 0.13)
+
+
+def boss_laugh():
+    """Risa grave del boss ("ja ja ja ja"): bocanadas de voz aspera, cada una un poco mas floja y aguda."""
+    dur = 1.15
+    n = int(dur * SR)
+    sig = np.zeros(n)
+    for i in range(6):
+        start = int(i * 0.19 * SR)
+        m = int(0.15 * SR)
+        t = tt(m)
+        f0 = 165 + 14 * i
+        f = f0 - 45 * (t / t[-1])
+        src = 2 * ((np.cumsum(f) / SR) % 1.0) - 1
+        src += 0.35 * rng.uniform(-1, 1, m)
+        v = lowpass(src, 0.3)
+        v = v - lowpass(v, 0.03)
+        v = np.tanh(v * 2.5)
+        env = np.minimum(1, t / 0.012) * np.exp(-t / 0.07)
+        sig[start:start + m] += v * env * (1.0 - 0.08 * i)
+    return sig
+
+
+def clang():
+    """Choque metalico (patada contra una daga): parciales inarmonicos que decaen rapido + chasquido."""
+    n = int(0.45 * SR)
+    t = tt(n)
+    sig = np.zeros(n)
+    for f, a, d in ((1180, 1.0, 0.14), (1790, 0.8, 0.11), (2630, 0.6, 0.08), (3910, 0.45, 0.05), (5370, 0.3, 0.03)):
+        sig += a * np.sin(2 * np.pi * f * t) * np.exp(-t / d)
+    click = rng.uniform(-1, 1, n)
+    sig += (click - lowpass(click, 0.2)) * np.exp(-t / 0.006) * 0.9
+    return np.tanh(sig * 0.9)
+
+
+def boss_roar():
+    """Rugido largo que sube de tono, con vibrato y distorsion: aviso de la embestida."""
+    n = int(1.4 * SR)
+    t = tt(n)
+    f = 75 + 120 * (t / t[-1]) ** 1.5 + 9 * np.sin(2 * np.pi * 13 * t)
+    src = 2 * ((np.cumsum(f) / SR) % 1.0) - 1
+    src += 0.6 * rng.uniform(-1, 1, n)
+    v = lowpass(src, 0.22 + 0.2 * (t / t[-1]))
+    v = v - lowpass(v, 0.02)
+    v = np.tanh(v * 4.0)
+    env = np.minimum(1, t / 0.12) * np.minimum(1, (t[-1] - t) / 0.2)
+    return v * env
+
+
 if __name__ == '__main__':
     write('swing', swing(), -6)
     write('hit', hit(False), -2)
@@ -153,3 +234,9 @@ if __name__ == '__main__':
     write('thunder', thunder(), -1)
     write('slot_tick', slot_tick(), -6)
     write('slot_win', slot_win(), -4)
+    write('hiss', hiss(), -5)
+    write('spit', spit(), -4)
+    write('boss_yell', boss_yell(), -2)
+    write('boss_roar', boss_roar(), -1)
+    write('clang', clang(), -3)
+    write('boss_laugh', boss_laugh(), -2)

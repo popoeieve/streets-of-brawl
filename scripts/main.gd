@@ -9,6 +9,11 @@ const CAM_FOLLOW_RECENTER := 1.4 ## Al terminar una oleada, la cámara vuelve a 
 const CAM_FOLLOW_RAMP := 1.6 ## Cuánto sube la rapidez por segundo hasta volver a la normal.
 const PlayerScene := preload("res://scenes/player.tscn")
 const EnemyScene := preload("res://scenes/enemy.tscn")
+const BossScene := preload("res://scenes/boss.tscn")
+
+## Para probar solo al boss: ponlo en true (no sale ningún otro enemigo y el boss aparece nada más empezar).
+## En false (lo normal) se juega el nivel completo: 4 oleadas y el boss al final.
+const TEST_BOSS_ONLY := false
 
 ## x = posición del jugador que dispara la oleada; enemies = cuántos salen.
 const WAVES := [
@@ -16,6 +21,7 @@ const WAVES := [
 	{"x": 600, "enemies": 3},
 	{"x": 900, "enemies": 4},
 	{"x": 1120, "enemies": 5},
+	{"x": 1120, "boss": true}, # zona final: el boss EL BRUTO, solo, cuando acaba la oleada anterior
 ]
 
 var player: Player
@@ -24,6 +30,7 @@ var actors: Node2D
 var hud: HUD
 var score := 0
 var wave_index := 0
+var waves: Array = WAVES
 var wave_active := false
 var cam_max := float(LEVEL_W - VIEW_W / 2)
 var cam_follow := CAM_FOLLOW_NORMAL ## Rapidez con la que la cámara alcanza su objetivo (más baja = más suave).
@@ -34,9 +41,12 @@ var music: AudioStreamPlayer
 var clear_active := false ## Secuencia de final de misión en marcha (el jugador ya no controla).
 var cam_end_x := 0.0
 var kills := 0
+var mission_time := 0.0 ## Segundos que llevas en la misión (se muestra en el HUD y en el panel final).
 
 
 func _ready() -> void:
+	if TEST_BOSS_ONLY:
+		waves = [{"x": 200, "boss": true}]
 	add_child(Background.new())
 
 	actors = Node2D.new()
@@ -56,6 +66,8 @@ func _ready() -> void:
 	player.health_changed.connect(hud.set_health)
 	player.died.connect(_on_player_died)
 	hud.set_health(player.health, player.max_health)
+	player.specials_changed.connect(hud.set_specials)
+	hud.set_specials(player.specials, player.specials_used)
 
 	music = Music.play(self, Music.STREET, -8.0, 2.0)
 
@@ -74,6 +86,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not finished:
+		mission_time += delta
+		hud.set_time(mission_time)
 	if finished:
 		if clear_active:
 			# La cámara se centra despacio donde estaba el personaje y NO le sigue mientras sale andando.
@@ -93,9 +108,9 @@ func _process(delta: float) -> void:
 	player.min_x = cam_x - VIEW_W / 2.0 + 10.0
 	player.max_x = (cam_x + VIEW_W / 2.0 - 10.0) if wave_active else float(LEVEL_W - 10)
 
-	if not wave_active and wave_index < WAVES.size() \
-			and player.position.x >= WAVES[wave_index]["x"]:
-		_start_wave(WAVES[wave_index])
+	if not wave_active and wave_index < waves.size() \
+			and player.position.x >= waves[wave_index]["x"]:
+		_start_wave(waves[wave_index])
 	elif wave_active and get_tree().get_nodes_in_group("enemies").is_empty():
 		_end_wave()
 
@@ -105,7 +120,18 @@ func _start_wave(wave: Dictionary) -> void:
 	cam_follow = CAM_FOLLOW_NORMAL
 	cam_max = float(wave["x"])
 	hud.set_message("")
-	for i in int(wave["enemies"]):
+	if wave.get("boss", false):
+		var b: Boss = BossScene.instantiate()
+		b.position = Vector2(cam_max + 190.0, 180.0)
+		b.arena_l = cam_max - VIEW_W / 2.0 + 26.0
+		b.arena_r = cam_max + VIEW_W / 2.0 - 26.0
+		b.died.connect(_on_enemy_died)
+		b.died.connect(func(_f: Fighter) -> void: hud.hide_boss())
+		b.health_changed.connect(hud.set_boss_health)
+		actors.add_child(b)
+		hud.show_boss("EL BRUTO")
+		return
+	for i in int(wave.get("enemies", 0)):
 		var e: Enemy = EnemyScene.instantiate()
 		var side := -1 if i % 2 == 0 else 1
 		var lane_y := [150.0, 180.0, 208.0] # tres "calles" para que no salgan en fila
@@ -119,7 +145,7 @@ func _end_wave() -> void:
 	cam_follow = CAM_FOLLOW_RECENTER
 	wave_index += 1
 	cam_max = float(LEVEL_W - VIEW_W / 2)
-	if wave_index >= WAVES.size():
+	if wave_index >= waves.size():
 		finished = true
 		_switch_music(Music.CLEAR)
 		# Fin de misión: el jugador pierde el control, el personaje sale despacio por la derecha sin que la
@@ -132,6 +158,8 @@ func _end_wave() -> void:
 		var results := Results.new()
 		results.score = score
 		results.kills = kills
+		results.mission_time = mission_time
+		results.specials_used = player.specials_used
 		results.fade_started.connect(_on_results_fade)
 		results.done.connect(_on_results_done)
 		add_child(results)
@@ -159,8 +187,8 @@ func _on_results_done() -> void:
 	get_tree().change_scene_to_file("res://scenes/menu.tscn")
 
 
-func _on_enemy_died(_f: Fighter) -> void:
-	score += 100
+func _on_enemy_died(f: Fighter) -> void:
+	score += f.score_value
 	kills += 1
 	hud.set_score(score)
 

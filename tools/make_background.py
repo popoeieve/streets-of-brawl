@@ -9,6 +9,7 @@ W, H = 1280, 224
 SIDEWALK_Y = 118
 CURB_Y = 138
 rnd = random.Random(2024)
+dr = random.Random(4242)      # detalle extra: generador aparte para no mover nada de lo que ya estaba dibujado
 img = Image.new('RGB', (W, H))
 d = ImageDraw.Draw(img)
 
@@ -115,6 +116,8 @@ for k in range(7):                                       # paso de peatones
     rect(300 + k * 8, 140, 300 + k * 8 + 5, 214, (0xcf, 0xca, 0xb8)) if False else None
 
 
+ground_snap = img.copy()   # suelo liso, para detallarlo al final solo donde nada lo tapa
+
 # ---------- casas ----------
 FONT = {  # fuente 3x5 para el azulejo con el nombre de la calle
     'C': ["111", "100", "100", "100", "111"], 'T': ["111", "010", "010", "010", "010"],
@@ -134,55 +137,144 @@ def text(x0, y0, s, c):
 
 
 def window(x0, y0, w, h, shutters=None):
-    rect(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, (0xf8, 0xf6, 0xee))
+    PAINT = (0xf8, 0xf6, 0xee)
+    rect(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, PAINT)
     rect(x0, y0, x0 + w, y0 + h, GLASS)
     rect(x0 + 1, y0 + 1, x0 + 3, y0 + h - 1, (0x4a, 0x5a, 0x7a))  # reflejo
-    rect(x0 + w // 2, y0, x0 + w // 2 + 1, y0 + h, (0xf8, 0xf6, 0xee))
-    rect(x0 - 2, y0 + h + 1, x0 + w + 2, y0 + h + 2, (0xb8, 0xae, 0x98))  # alféizar
+    rect(x0 + w // 2, y0, x0 + w // 2 + 1, y0 + h, PAINT)
+    rect(x0, y0 + h // 2 - 1, x0 + w, y0 + h // 2, PAINT)           # travesaño: 4 cristales
+    rect(x0, y0, x0 + w, y0 + 1, (0x1a, 0x22, 0x36))                  # sombra del dintel dentro del hueco
+    rect(x0, y0 + 1, x0 + 1, y0 + h, (0x1a, 0x22, 0x36))
+    rect(x0 - 2, y0 - 3, x0 + w + 2, y0 - 1, (0xe6, 0xdf, 0xcc))      # dintel sobresaliente
+    rect(x0 - 2, y0 - 1, x0 + w + 2, y0, (0xa8, 0x9e, 0x88))          # sombra bajo el dintel
+    rect(x0 - 2, y0 + h + 1, x0 + w + 2, y0 + h + 2, (0xd0, 0xc6, 0xae))  # alféizar
+    rect(x0 - 2, y0 + h + 2, x0 + w + 2, y0 + h + 3, (0x8a, 0x80, 0x6c))
+    rect(x0 - 1, y0 + h + 3, x0, y0 + h + 5, (0xa8, 0x9e, 0x88))      # ménsulas del alféizar
+    rect(x0 + w, y0 + h + 3, x0 + w + 1, y0 + h + 5, (0xa8, 0x9e, 0x88))
     if shutters:
-        rect(x0 - 4, y0 - 1, x0 - 1, y0 + h + 1, shutters)
-        rect(x0 + w + 1, y0 - 1, x0 + w + 4, y0 + h + 1, shutters)
-        for yy in range(y0, y0 + h, 2):
-            rect(x0 - 4, yy, x0 - 1, yy + 1, shade(shutters, 0.75))
-            rect(x0 + w + 1, yy, x0 + w + 4, yy + 1, shade(shutters, 0.75))
+        for sx in (x0 - 4, x0 + w + 1):
+            rect(sx, y0 - 1, sx + 3, y0 + h + 1, shutters)
+            rect(sx, y0 - 1, sx + 1, y0 + h + 1, shade(shutters, 1.18))   # canto iluminado
+            rect(sx + 2, y0 - 1, sx + 3, y0 + h + 1, shade(shutters, 0.62))
+            for yy in range(y0, y0 + h, 2):                               # lamas
+                rect(sx + 1, yy, sx + 2, yy + 1, shade(shutters, 0.72))
+            px(sx + 1, y0 + 1, (0x20, 0x20, 0x20))                         # bisagras
+            px(sx + 1, y0 + h - 2, (0x20, 0x20, 0x20))
+    else:
+        r = dr.random()
+        if r < 0.3:                                                       # cortinas
+            cc = dr.choice(((0xe8, 0xdc, 0xc0), (0xc8, 0x8a, 0x7a), (0xb8, 0xc8, 0xd8)))
+            rect(x0 + 1, y0 + 1, x0 + 3, y0 + h - 4, cc)
+            rect(x0 + w - 3, y0 + 1, x0 + w - 1, y0 + h - 4, shade(cc, 0.85))
+        elif r < 0.5:                                                     # persiana enrollable a medias
+            rect(x0, y0, x0 + w, y0 + 5, (0xb8, 0xb0, 0x98))
+            for yy in range(y0 + 1, y0 + 5, 2):
+                rect(x0, yy, x0 + w, yy + 1, (0x8c, 0x84, 0x70))
+        elif r < 0.62:                                                    # toldo de rayas
+            for k2 in range(0, w + 4, 3):
+                c = (0xc8, 0x30, 0x30) if (k2 // 3) % 2 == 0 else (0xf4, 0xf0, 0xe0)
+                rect(x0 - 2 + k2, y0 - 7, x0 + k2 + 1, y0 - 3, c)
+            rect(x0 - 2, y0 - 3, x0 + w + 2, y0 - 2, (0x7a, 0x20, 0x20))
 
 
 def reja(x0, y0, w, h):
     window(x0, y0, w, h)
     for xx in range(x0 + 1, x0 + w, 3):
         rect(xx, y0, xx + 1, y0 + h, IRON)
+        px(xx, y0 - 1, IRON)                                             # punta de lanza
+        px(xx - 1, y0 + 1, IRON)
     rect(x0, y0 + h // 2, x0 + w, y0 + h // 2 + 1, IRON)
+    rect(x0, y0 + 2, x0 + w, y0 + 3, IRON)                               # segundo travesaño
     rect(x0 - 1, y0 + h - 1, x0 + w + 1, y0 + h, IRON)
+    for xx in range(x0 + 2, x0 + w - 1, 6):                              # florón (rizo de forja) en el centro
+        px(xx, y0 + h // 2 - 1, IRON)
+        px(xx + 1, y0 + h // 2 - 2, IRON)
+        px(xx + 2, y0 + h // 2 - 1, IRON)
+    rect(x0 - 1, y0 - 1, x0, y0 + h + 1, IRON)                           # marco de forja
+    rect(x0 + w, y0 - 1, x0 + w + 1, y0 + h + 1, IRON)
+    if dr.random() < 0.4:                                                # maceta tras la reja
+        rect(x0 + 3, y0 + h - 5, x0 + 7, y0 + h - 1, (0x9c, 0x4a, 0x2a))
+        rect(x0 + 3, y0 + h - 8, x0 + 7, y0 + h - 5, (0x3a, 0x7a, 0x3a))
 
 
 def door(x0, y0, w, h, c=WOOD):
-    rect(x0 - 1, y0 - 2, x0 + w + 1, y0 + h, (0xf8, 0xf6, 0xee))
+    PAINT = (0xf8, 0xf6, 0xee)
+    rect(x0 - 3, y0 + h, x0 + w + 3, y0 + h + 1, (0xb8, 0xb0, 0x9c))     # umbral de piedra
+    rect(x0 - 1, y0 - 2, x0 + w + 1, y0 + h, PAINT)
+    rect(x0 - 2, y0 - 4, x0 + w + 2, y0 - 2, (0xe6, 0xdf, 0xcc))          # dintel
+    rect(x0 - 2, y0 - 2, x0 + w + 2, y0 - 1, (0xa8, 0x9e, 0x88))
     rect(x0, y0 - 1, x0 + w, y0 + h, c)
-    rect(x0 + 2, y0 + 2, x0 + w // 2 - 1, y0 + h // 2 - 1, shade(c, 0.78))
-    rect(x0 + w // 2 + 1, y0 + 2, x0 + w - 2, y0 + h // 2 - 1, shade(c, 0.78))
-    rect(x0 + 2, y0 + h // 2 + 2, x0 + w - 2, y0 + h - 2, shade(c, 0.85))
-    px(x0 + w - 3, y0 + h // 2, (0xe8, 0xc0, 0x50))      # picaporte
+    rect(x0, y0 - 1, x0 + w, y0, shade(c, 0.55))                          # sombra superior en el hueco
+    rect(x0, y0, x0 + 1, y0 + h, shade(c, 0.7))
+    for (ax, ay, bx, by) in ((x0 + 2, y0 + 2, x0 + w // 2 - 1, y0 + h // 2 - 1),
+                             (x0 + w // 2 + 1, y0 + 2, x0 + w - 2, y0 + h // 2 - 1),
+                             (x0 + 2, y0 + h // 2 + 2, x0 + w - 2, y0 + h - 2)):
+        rect(ax, ay, bx, by, shade(c, 0.78))                              # cuarterones hundidos
+        rect(ax, ay, bx, ay + 1, shade(c, 0.55))
+        rect(ax, ay, ax + 1, by, shade(c, 0.6))
+        rect(ax, by - 1, bx, by, shade(c, 1.2))                           # arista iluminada abajo
+        rect(bx - 1, ay, bx, by, shade(c, 1.15))
+    px(x0 + w - 3, y0 + h // 2, (0xe8, 0xc0, 0x50))                      # picaporte
+    px(x0 + w - 3, y0 + h // 2 + 1, (0xa8, 0x80, 0x30))
+    if dr.random() < 0.5:                                                # aldaba y mirilla
+        px(x0 + w // 2, y0 + 4, (0xe8, 0xc0, 0x50))
+        px(x0 + w // 2, y0 + 5, (0xe8, 0xc0, 0x50))
+    if dr.random() < 0.4:                                                # clavos de forja
+        for yy in range(y0 + 3, y0 + h - 2, 4):
+            px(x0 + 1, yy, (0x20, 0x20, 0x24))
+            px(x0 + w - 2, yy, (0x20, 0x20, 0x24))
+    rect(x0 - 3, y0 + h - 1, x0 + w + 3, y0 + h, (0x8a, 0x82, 0x72))      # escalón
+    # plaquita de número y timbre junto a la puerta
+    rect(x0 + w + 3, y0 + 4, x0 + w + 8, y0 + 8, (0xf2, 0xf4, 0xf8))
+    rect(x0 + w + 4, y0 + 5, x0 + w + 7, y0 + 7, (0x2a, 0x4f, 0xa8))
+    rect(x0 + w + 4, y0 + 11, x0 + w + 6, y0 + 14, (0x4a, 0x4a, 0x50))
+    px(x0 + w + 5, y0 + 12, (0xe8, 0xd0, 0x50))
 
 
 def balcony(cx, y_floor, w=20, door_c=GREEN):
     """Balcón de forja con puerta de contraventanas verdes. y_floor = suelo del balcón."""
     x0 = cx - w // 2
-    rect(x0 + 3, y_floor - 24, x0 + w - 3, y_floor, (0xf8, 0xf6, 0xee))
+    PAINT = (0xf8, 0xf6, 0xee)
+    rect(x0 + 3, y_floor - 24, x0 + w - 3, y_floor, PAINT)
+    rect(x0 + 2, y_floor - 27, x0 + w - 2, y_floor - 24, (0xe6, 0xdf, 0xcc))     # dintel
+    rect(x0 + 2, y_floor - 24, x0 + w - 2, y_floor - 23, (0xa8, 0x9e, 0x88))
     rect(x0 + 4, y_floor - 23, x0 + w - 4, y_floor, GLASS)
     rect(x0 + 4, y_floor - 23, x0 + w // 2, y_floor, door_c)             # hoja izquierda
     rect(x0 + w // 2 + 1, y_floor - 23, x0 + w - 4, y_floor, shade(door_c, 0.9))
     for yy in range(y_floor - 22, y_floor, 2):
         rect(x0 + 4, yy, x0 + w - 4, yy + 1, shade(door_c, 0.72))
-    rect(x0, y_floor, x0 + w, y_floor + 2, (0xd8, 0xd0, 0xbc))            # losa
-    rect(x0, y_floor + 2, x0 + w, y_floor + 3, (0x9a, 0x90, 0x7c))
+    rect(x0 + 4, y_floor - 23, x0 + 5, y_floor, shade(door_c, 1.2))       # cantos
+    rect(x0 + w // 2, y_floor - 23, x0 + w // 2 + 1, y_floor, shade(door_c, 0.5))
+    rect(x0 + w - 5, y_floor - 23, x0 + w - 4, y_floor, shade(door_c, 0.55))
+    px(x0 + w // 2 - 2, y_floor - 12, (0xe8, 0xc0, 0x50))               # tirador
+    px(x0 + w // 2 + 3, y_floor - 12, (0xe8, 0xc0, 0x50))
+    rect(x0 - 1, y_floor, x0 + w + 1, y_floor + 2, (0xd8, 0xd0, 0xbc))    # losa
+    rect(x0 - 1, y_floor, x0 + w + 1, y_floor + 1, (0xee, 0xe8, 0xd8))
+    rect(x0 - 1, y_floor + 2, x0 + w + 1, y_floor + 3, (0x9a, 0x90, 0x7c))
+    for xx in (x0 + 1, x0 + w // 2 - 1, x0 + w - 3):                       # ménsulas bajo la losa
+        rect(xx, y_floor + 3, xx + 2, y_floor + 6, (0xa8, 0x9e, 0x88))
+        px(xx, y_floor + 6, (0x8a, 0x80, 0x6c))
     rect(x0, y_floor - 7, x0 + w, y_floor - 6, IRON)                      # barandilla
+    rect(x0, y_floor - 8, x0 + w, y_floor - 7, shade(IRON, 1.6))          # pasamanos
     for xx in range(x0, x0 + w, 2):
         rect(xx, y_floor - 7, xx + 1, y_floor, IRON)
+        if (xx - x0) % 4 == 0:
+            px(xx, y_floor - 9, IRON)                                      # remates
+    for xx in range(x0 + 2, x0 + w - 2, 6):                                # volutas de forja
+        px(xx, y_floor - 4, IRON); px(xx + 1, y_floor - 3, IRON); px(xx + 2, y_floor - 4, IRON)
+        px(xx + 1, y_floor - 5, IRON)
+    rect(x0 - 1, y_floor - 7, x0, y_floor, IRON)
+    rect(x0 + w, y_floor - 7, x0 + w + 1, y_floor, IRON)
     for xx in range(x0 + 3, x0 + w - 2, 6):                              # macetas
         rect(xx, y_floor - 11, xx + 3, y_floor - 7, (0x9c, 0x4a, 0x2a))
+        rect(xx, y_floor - 11, xx + 3, y_floor - 10, (0xc0, 0x6a, 0x42))
         rect(xx, y_floor - 13, xx + 3, y_floor - 11, (0x3a, 0x7a, 0x3a))
         px(xx + 1, y_floor - 14, (0xd8, 0x2a, 0x3a))
         px(xx + 2, y_floor - 13, (0xe8, 0x4a, 0x5a))
+        px(xx, y_floor - 12, (0x2a, 0x5a, 0x2c))
+    if dr.random() < 0.45:                                                # ropa tendida en el balcón
+        for xx in range(x0 + 2, x0 + w - 2, 4):
+            rect(xx, y_floor - 20, xx + 2, y_floor - 15, dr.choice(((0xf2, 0xf2, 0xea), (0x6a, 0x9a, 0xd0), (0xd8, 0x6a, 0x5a), (0xe8, 0xd0, 0x6a))))
 
 
 def house(x0, w, n_floors, wall, zoc, roof_kind, shop=False):
@@ -194,6 +286,41 @@ def house(x0, w, n_floors, wall, zoc, roof_kind, shop=False):
         px(rnd.randint(x0, right - 1), rnd.randint(top, SIDEWALK_Y - 9), shade(wall, rnd.choice((0.95, 0.93, 1.03))))
     rect(right - 3, top, right, SIDEWALK_Y, shade(wall, 0.84))
     rect(x0, top, x0 + 1, SIDEWALK_Y, shade(wall, 1.05))
+    # --- detalle de fachada: manchas de cal, ladrillo visto, molduras de planta, esquinas de sillería ---
+    for _ in range(max(2, w // 18)):                  # desconchones / manchas de humedad
+        bx, by = dr.randint(x0 + 3, right - 12), dr.randint(top + 6, SIDEWALK_Y - 24)
+        bw, bh = dr.randint(6, 16), dr.randint(4, 12)
+        k = dr.choice((0.93, 0.9, 1.04))
+        for yy in range(by, by + bh):
+            for xx in range(bx, bx + bw):
+                ex = min(xx - bx, bx + bw - 1 - xx, yy - by, by + bh - 1 - yy)
+                if ex > 1 or (ex == 1 and (xx + yy) % 2 == 0) or (ex == 0 and dr.random() < 0.25):
+                    px(xx, yy, shade(wall, k))
+    if dr.random() < 0.4:                             # desconchón con ladrillo visto
+        bx, by = dr.randint(x0 + 6, right - 22), dr.randint(top + 10, SIDEWALK_Y - 30)
+        bw, bh = dr.randint(8, 14), dr.randint(6, 10)
+        for yy in range(by, by + bh):
+            for xx in range(bx, bx + bw):
+                if (xx - bx + yy - by) % 7 != 6 or dr.random() < 0.3:
+                    if dr.random() < 0.88:
+                        row = (yy - by) % 3
+                        c = (0xb0, 0x5a, 0x3c) if row else (0x7a, 0x3a, 0x28)
+                        if (xx + (yy - by) // 3 * 3) % 6 == 0:
+                            c = (0x7a, 0x3a, 0x28)
+                        px(xx, yy, c)
+        for xx in range(bx - 1, bx + bw + 1):
+            px(xx, by - 1, shade(wall, 0.8))
+            px(xx, by + bh, shade(wall, 0.85))
+    for f in range(1, n_floors):                      # moldura corrida entre plantas
+        my = SIDEWALK_Y - 9 - 34 * f - 4 + 9
+        if my > top + 8:
+            rect(x0, my, right - 3, my + 1, shade(wall, 1.08))
+            rect(x0, my + 1, right - 3, my + 2, shade(wall, 0.8))
+    for yy in range(top + 4, SIDEWALK_Y - 10, 8):     # sillares en la esquina izquierda
+        sw = 5 if (yy // 8) % 2 else 3
+        rect(x0 + 1, yy, x0 + 1 + sw, yy + 7, shade(wall, 0.97))
+        rect(x0 + 1, yy + 7, x0 + 1 + sw, yy + 8, shade(wall, 0.82))
+        rect(x0 + 1 + sw, yy, x0 + 2 + sw, yy + 8, shade(wall, 0.85))
     # cornisa / tejado
     if roof_kind == 'tile':
         rect(x0 - 3, top - 7, right + 3, top, TILE)
@@ -214,6 +341,13 @@ def house(x0, w, n_floors, wall, zoc, roof_kind, shop=False):
     rect(x0, SIDEWALK_Y - 9, right, SIDEWALK_Y, zoc)
     rect(x0, SIDEWALK_Y - 10, right, SIDEWALK_Y - 9, shade(zoc, 0.7))
     rect(x0, SIDEWALK_Y - 9, right, SIDEWALK_Y - 8, shade(zoc, 1.2))
+    for xx in range(x0, right, 7):                    # azulejos / junta del zócalo
+        rect(xx, SIDEWALK_Y - 8, xx + 1, SIDEWALK_Y, shade(zoc, 0.78))
+    rect(x0, SIDEWALK_Y - 4, right, SIDEWALK_Y - 3, shade(zoc, 0.82))
+    for xx in range(x0 + 2, right, 7):
+        px(xx, SIDEWALK_Y - 7, shade(zoc, 1.3)); px(xx + 3, SIDEWALK_Y - 3, shade(zoc, 1.25))
+    for _ in range(w // 10):                          # roces y salpicaduras en la base
+        px(dr.randint(x0, right - 1), dr.randint(SIDEWALK_Y - 8, SIDEWALK_Y - 1), shade(zoc, dr.choice((0.7, 1.3))))
     # plantas
     slots = max(1, (w - 8) // 28)
     gap = w / slots
@@ -250,6 +384,22 @@ def house(x0, w, n_floors, wall, zoc, roof_kind, shop=False):
                 balcony(cx, fy + 2, 20 if gap > 24 else 16, rnd.choice((GREEN, (0x5a, 0x3a, 0x22), (0x2a, 0x4a, 0x6a))))
             else:
                 window(cx - 6, fy - 20, 12, 16, rnd.choice((GREEN, (0x5a, 0x3a, 0x22), None)))
+    # bajante de aguas con abrazaderas y caja de contadores
+    pxx = right - 7
+    rect(pxx, top + 2, pxx + 2, SIDEWALK_Y - 9, (0x9a, 0x9a, 0xa2))
+    rect(pxx + 1, top + 2, pxx + 2, SIDEWALK_Y - 9, (0x74, 0x74, 0x80))
+    for yy in range(top + 8, SIDEWALK_Y - 10, 14):
+        rect(pxx - 1, yy, pxx + 3, yy + 1, (0x5c, 0x5c, 0x66))
+    if dr.random() < 0.5:
+        mx = x0 + 6
+        rect(mx, SIDEWALK_Y - 24, mx + 9, SIDEWALK_Y - 12, (0x8a, 0x8e, 0x94))
+        rect(mx + 1, SIDEWALK_Y - 23, mx + 8, SIDEWALK_Y - 13, (0xb8, 0xbc, 0xc0))
+        rect(mx + 1, SIDEWALK_Y - 18, mx + 8, SIDEWALK_Y - 17, (0x6a, 0x6e, 0x74))
+        px(mx + 6, SIDEWALK_Y - 21, (0xc8, 0x40, 0x30))
+    for yy in range(top - 7, top - 1, 2):             # hiladas de teja más marcadas
+        if roof_kind == 'tile':
+            for xx in range(x0 - 3, right + 3, 6):
+                px(xx + (yy % 4) // 2 * 3, yy, shade(TILE, 1.18))
     # cables eléctricos sueltos / aire acondicionado
     if rnd.random() < 0.5:
         ax = rnd.randint(x0 + 4, right - 16)
@@ -671,6 +821,94 @@ def plaza_quiosco(xa, xb):
 
 
 plaza_quiosco(0, 202)
+
+
+# ---------- detalle del suelo (acera + calzada), solo sobre píxeles que siguen intactos ----------
+def ground_detail():
+    gr = random.Random(777)
+    def free(x, y):
+        return 0 <= x < W and 0 <= y < H and img.getpixel((x, y)) == ground_snap.getpixel((x, y))
+    def put(x, y, c):
+        if free(x, y):
+            img.putpixel((x, y), c)
+    def mul(x, y, k):
+        if free(x, y):
+            img.putpixel((x, y), shade(img.getpixel((x, y)), k))
+    # acera: cada losa con un tono propio (rombos en diagonal) + desgaste
+    for y in range(SIDEWALK_Y + 2, CURB_Y):
+        for x in range(W):
+            tid = ((x + (CURB_Y - y)) // 20) * 3 + (y - SIDEWALK_Y) // 7
+            k = (0.95, 1.0, 1.04, 0.98, 1.02)[(tid * 7 + 3) % 5]
+            if k != 1.0:
+                c = ground_snap.getpixel((x, y))
+                if c[0] > 0xb0:          # no tocar las juntas oscuras
+                    mul(x, y, k)
+    for _ in range(900):                  # motas de suciedad y granos
+        mul(gr.randint(0, W - 1), gr.randint(SIDEWALK_Y + 2, CURB_Y - 1), gr.choice((0.88, 0.92, 1.07)))
+    for _ in range(26):                   # grietas en zigzag
+        x, y = gr.randint(0, W - 1), gr.randint(SIDEWALK_Y + 3, CURB_Y - 3)
+        for _ in range(gr.randint(6, 16)):
+            put(x, y, (0x86, 0x7c, 0x66))
+            x += gr.choice((-1, 0, 1, 1)); y += gr.choice((-1, 0, 0, 1))
+    for _ in range(30):                   # desportillados en las juntas
+        x, y = gr.randint(0, W - 4), gr.randint(SIDEWALK_Y + 3, CURB_Y - 3)
+        put(x, y, (0x7e, 0x74, 0x5e)); put(x + 1, y, (0x95, 0x8b, 0x74)); put(x, y + 1, (0xe4, 0xdc, 0xc6))
+    for _ in range(34):                   # hierbajos entre baldosas y al pie de la fachada
+        x = gr.randint(0, W - 3)
+        y = gr.choice((SIDEWALK_Y + 2, SIDEWALK_Y + 3, gr.randint(SIDEWALK_Y + 4, CURB_Y - 2)))
+        for dx, dy in ((0, 0), (1, 0), (-1, -1), (1, -1), (0, -2)):
+            put(x + dx, y + dy, gr.choice(((0x3a, 0x7a, 0x3a), (0x52, 0x96, 0x44), (0x2c, 0x5e, 0x30))))
+    for gx in range(70, W, 190):          # sumideros en el bordillo
+        gx += gr.randint(-12, 12)
+        for yy in range(CURB_Y + 3, CURB_Y + 8):
+            for xx in range(gx, gx + 18):
+                put(xx, yy, (0x1c, 0x1b, 0x22) if (xx - gx) % 3 else (0x4a, 0x48, 0x52))
+        for xx in range(gx, gx + 18):
+            put(xx, CURB_Y + 8, (0x77, 0x75, 0x80))
+        put(gx - 1, CURB_Y + 5, (0x77, 0x75, 0x80)); put(gx + 18, CURB_Y + 5, (0x77, 0x75, 0x80))
+    # calzada
+    for _ in range(14):                   # parches de asfalto reparado
+        x, y = gr.randint(0, W - 40), gr.randint(CURB_Y + 14, H - 10)
+        w_, h_ = gr.randint(14, 36), gr.randint(5, 11)
+        dark = gr.choice((0.8, 0.88, 1.12))
+        for yy in range(y, y + h_):
+            for xx in range(x, x + w_):
+                mul(xx, yy, dark)
+        for xx in range(x, x + w_):
+            put(xx, y, shade((0x5b, 0x59, 0x63), 0.62)); put(xx, y + h_ - 1, shade((0x5b, 0x59, 0x63), 1.3))
+    for _ in range(26):                   # grietas
+        x, y = gr.randint(0, W - 1), gr.randint(CURB_Y + 8, H - 3)
+        for _ in range(gr.randint(10, 30)):
+            put(x, y, (0x33, 0x32, 0x3b))
+            x += gr.choice((-1, 1, 1, 2)); y += gr.choice((-1, 0, 0, 1))
+    for _ in range(10):                   # manchas de aceite
+        x, y = gr.randint(0, W - 30), gr.randint(CURB_Y + 16, H - 12)
+        for yy in range(-4, 5):
+            for xx in range(-12, 13):
+                if (xx / 12) ** 2 + (yy / 4) ** 2 < 1 and gr.random() < 0.75:
+                    mul(x + xx, y + yy, 0.78)
+    for _ in range(18):                   # marcas de neumático (dos rayas paralelas)
+        x, y = gr.randint(0, W - 90), gr.randint(CURB_Y + 14, H - 14)
+        for i in range(gr.randint(30, 80)):
+            if gr.random() < 0.9:
+                mul(x + i, y, 0.82); mul(x + i, y + 6, 0.82)
+    for xx in range(60, W, 330):          # tapas de alcantarilla
+        xx += gr.randint(-20, 20)
+        yy = gr.randint(CURB_Y + 22, 172)
+        for dy in range(-5, 6):
+            for dx in range(-9, 10):
+                if (dx / 9) ** 2 + (dy / 5) ** 2 <= 1:
+                    rim = (dx / 9) ** 2 + (dy / 5) ** 2 > 0.72
+                    put(xx + dx, yy + dy, (0x84, 0x82, 0x8c) if rim else ((0x3e, 0x3d, 0x48) if (dx + dy) % 4 else (0x52, 0x50, 0x5b)))
+    for yy in (184,):                     # pintura desgastada en la línea discontinua
+        for xx in range(8, W, 48):
+            for _ in range(5):
+                put(xx + gr.randint(0, 21), yy + gr.randint(0, 1), (0x6a, 0x68, 0x6e))
+    for _ in range(1400):                 # grano extra de la calzada (piedrecitas claras)
+        put(gr.randint(0, W - 1), gr.randint(CURB_Y + 6, H - 1), (0x76, 0x74, 0x7e))
+
+
+ground_detail()
 
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 out = args[0] if args else 'assets/backgrounds/calle_tajo.png'

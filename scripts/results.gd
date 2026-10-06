@@ -18,6 +18,8 @@ const BLACK_HOLD := 1.0
 
 var score := 0
 var kills := 0
+var mission_time := 0.0
+var specials_used := 0
 var _t := 0.0
 var _t0_ms := -1 ## Instante (reloj real) en que empieza la cuenta.
 var _count := 0.0
@@ -29,6 +31,7 @@ var _black: ColorRect
 var _title: Label
 var _info: Label
 var _score: Label
+var _extra: Array = []
 
 
 func _ready() -> void:
@@ -38,6 +41,10 @@ func _ready() -> void:
 	_info = _label("ENEMIES DEFEATED  %d" % kills, 78.0, 10, Color.WHITE)
 	_label("SCORE", 100.0, 10, Color.WHITE)
 	_score = _label("000000", 112.0, 20, Color.WHITE)
+	_extra.append(_label("TIME  " + HUD.format_time(mission_time), 148.0, 10, Color.WHITE))
+	_extra.append(_label("SPECIALS USED  %d" % specials_used, 162.0, 10, Color.WHITE))
+	for l in _extra:
+		l.visible = false
 	_title.visible = false
 	_info.visible = false
 	_score.visible = false
@@ -77,6 +84,8 @@ func _process(delta: float) -> void:
 				_title.visible = true
 				_info.visible = true
 				_score.visible = true
+				for l in _extra:
+					l.visible = true
 				# Cuenta con el reloj real (no con la suma de deltas): dura COUNT_TIME segundos exactos.
 				if _t0_ms < 0:
 					_t0_ms = Time.get_ticks_msec()

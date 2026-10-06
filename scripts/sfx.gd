@@ -12,6 +12,12 @@ const SOUNDS := {
 	"thunder": preload("res://assets/sfx/thunder.wav"),
 	"slot_tick": preload("res://assets/sfx/slot_tick.wav"),
 	"slot_win": preload("res://assets/sfx/slot_win.wav"),
+	"hiss": preload("res://assets/sfx/hiss.wav"),
+	"spit": preload("res://assets/sfx/spit.wav"),
+	"boss_laugh": preload("res://assets/sfx/boss_laugh.wav"),
+	"clang": preload("res://assets/sfx/clang.wav"),
+	"boss_yell": preload("res://assets/sfx/boss_yell.wav"),
+	"boss_roar": preload("res://assets/sfx/boss_roar.wav"),
 }
 
 

@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/boss.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/boss_brute.png" id="2"]
+
+[node name="Boss" type="Node2D"]
+script = ExtResource("1")
+max_health = 300
+move_speed = 40.0
+attack_damage = 18
+hit_time = 0.3
+hit_reach = 52.0
+free_on_death = true
+shadow_radius = 15.0
+body_radius = 18.0
+sprite_sheet = ExtResource("2")
+anim_set = "brute"

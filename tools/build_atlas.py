@@ -181,6 +181,26 @@ def build_mage(proj, out_png):
         '\t\t},', '\t},'])
 
 
+BRUTE = '''	"brute": {
+		"cols": 4, "rows": 5,
+		"faces_right": false,
+		"frame": Vector2i(128, 85), "feet": Vector2(64, 83),
+		"anims": {
+			"idle": {"row": 0, "n": 4, "fps": 6.0, "loop": true},
+			"walk": {"row": 1, "n": 4, "fps": 8.0, "loop": true},
+			"attack1": {"row": 2, "n": 3, "fps": 0.0, "loop": false, "impact": 1},
+			"hurt": {"row": 3, "n": 2, "fps": 0.0, "loop": false},
+			"dead": {"row": 4, "n": 2, "fps": 0.0, "loop": false},
+			"idle2": {"alias": "hurt"},
+			"run": {"alias": "walk"},
+			"attack2": {"alias": "attack1"},
+			"attack3": {"alias": "attack1"},
+			"jump": {"alias": "idle"},
+		},
+	},
+'''   # boss: sprites de tools/build_boss_brute.py
+
+
 if __name__ == '__main__':
     src = sys.argv[1]
     proj = sys.argv[2] if len(sys.argv) > 2 else '.'
@@ -194,6 +214,6 @@ if __name__ == '__main__':
     m = build_mage(proj, os.path.join(sp, 'player_mage.png'))
     gd = ('# GENERADO por tools/build_atlas.py: no editar a mano (vuelve a ejecutar el script).\n'
           '# Configuración de las hojas de sprites: una fila por animación.\n'
-          'class_name AnimSets\n\nconst SETS := {\n' + m + '\n' + h + '\n' + g + '\n' + p + '\n}\n')
+          'class_name AnimSets\n\nconst SETS := {\n' + m + '\n' + h + '\n' + g + '\n' + p + '\n' + BRUTE + '}\n')
     open(os.path.join(proj, 'scripts/anim_sets.gd'), 'w', encoding='utf-8').write(gd)
     print('girl', gc, 'x', gr, ' punk', pc, 'x', pr)

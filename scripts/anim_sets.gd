@@ -1,4 +1,5 @@
 # GENERADO por tools/build_atlas.py: no editar a mano (vuelve a ejecutar el script).
+# El set "brute" (boss) sale de tools/build_boss_brute.py y build_atlas.py lo añade al final.
 # Configuración de las hojas de sprites: una fila por animación.
 class_name AnimSets
 
@@ -60,6 +61,23 @@ const SETS := {
 			"attack1": {"row": 2, "n": 3, "fps": 0.0, "loop": false, "impact": 1},
 			"hurt": {"row": 3, "n": 2, "fps": 0.0, "loop": false},
 			"dead": {"row": 4, "n": 2, "fps": 0.0, "loop": false},
+			"attack2": {"alias": "attack1"},
+			"attack3": {"alias": "attack1"},
+			"jump": {"alias": "idle"},
+		},
+	},
+	"brute": {
+		"cols": 4, "rows": 5,
+		"faces_right": false,
+		"frame": Vector2i(128, 85), "feet": Vector2(64, 83),
+		"anims": {
+			"idle": {"row": 0, "n": 4, "fps": 6.0, "loop": true},
+			"walk": {"row": 1, "n": 4, "fps": 8.0, "loop": true},
+			"attack1": {"row": 2, "n": 3, "fps": 0.0, "loop": false, "impact": 1},
+			"hurt": {"row": 3, "n": 2, "fps": 0.0, "loop": false},
+			"dead": {"row": 4, "n": 2, "fps": 0.0, "loop": false},
+			"idle2": {"alias": "hurt"},
+			"run": {"alias": "walk"},
 			"attack2": {"alias": "attack1"},
 			"attack3": {"alias": "attack1"},
 			"jump": {"alias": "idle"},

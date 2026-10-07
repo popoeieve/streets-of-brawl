@@ -276,7 +276,7 @@ func _end_attack(cooldown: float) -> void:
 func take_damage(amount: int, from: Fighter, strong := false) -> void:
 	if state == "dead" or state == "down":
 		return
-	if rage and _act == "charge":
+	if _immune():
 		return # en furia, mientras embiste es intocable: ni daño, ni tambaleo, ni derribo
 	health = maxi(health - amount, 0)
 	health_changed.emit(health, max_health)
@@ -301,7 +301,7 @@ func take_damage(amount: int, from: Fighter, strong := false) -> void:
 func knock_down(from: Fighter, amount: int) -> void:
 	if state == "dead" or state == "down":
 		return
-	if rage and _act == "charge":
+	if _immune():
 		return # en furia, mientras embiste es intocable: ni daño, ni tambaleo, ni derribo
 	health = maxi(health - amount, 0)
 	health_changed.emit(health, max_health)
@@ -315,6 +315,11 @@ func knock_down(from: Fighter, amount: int) -> void:
 	_go("approach")
 	_cd = 0.4
 	_fall(from)
+
+
+## En furia es intocable mientras se desplaza para embestir: la carrera previa (retreat) y la embestida (charge).
+func _immune() -> bool:
+	return rage and (_act == "charge" or _act == "retreat")
 
 
 func _fall(from: Fighter) -> void:
